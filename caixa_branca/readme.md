@@ -269,15 +269,16 @@ def analisar(numeros):
     return "Abaixo"
 
 ```
-
 ### 1. Grafo de Fluxo de Controle (GFC)
 
 ```mermaid
 graph TD
     1([1: total = 0]) --> 2{2: n in numeros?}
-    2 -- Sim --> 3{3: n > 0 AND par?}
-    3 -- Sim --> 4[4: total += n]
-    3 -- Não --> 5{5: n < 0?}
+    2 -- Sim --> 3A{3A: n > 0?}
+    3A -- Sim --> 3B{3B: n % 2 == 0?}
+    3A -- Não --> 5{5: n < 0?}
+    3B -- Sim --> 4[4: total += n]
+    3B -- Não --> 5
     5 -- Sim --> 6[6: total -= 1]
     5 -- Não --> 10[10: continue]
     4 --> 2
@@ -291,32 +292,30 @@ graph TD
 
 ```
 
-### 2. Complexidade Ciclomática e Caminhos
+### 2. Complexidade Ciclomática e Caminhos Atualizados
 
-* **Complexidade Ciclomática $V(G)$:** $V(G) = 6$ (Laço `for` + `if n>0` + `elif n<0` + `else implícito` + `if total>10` + 1).
+* **Complexidade Ciclomática $V(G)$:** $V(G) = 6$
+*(Contando as decisões agora fica claro: 1 laço + 4 perguntas lógicas + 1 = 6)*.
 * **Caminhos Independentes Principais (Rotas de Teste):**
-* **C1:** 1 $\rightarrow$ 2(F) $\rightarrow$ 7 $\rightarrow$ 9
-* **C2:** 1 $\rightarrow$ 2(V) $\rightarrow$ 3(V) $\rightarrow$ 4 $\rightarrow$ 2(F) $\rightarrow$ 7(V) $\rightarrow$ 8
-* **C3:** 1 $\rightarrow$ 2(V) $\rightarrow$ 3(F) $\rightarrow$ 5(V) $\rightarrow$ 6 $\rightarrow$ 2(F) $\rightarrow$ 7(F) $\rightarrow$ 9
-* **C4:** 1 $\rightarrow$ 2(V) $\rightarrow$ 3(F) $\rightarrow$ 5(F) $\rightarrow$ 10 $\rightarrow$ 2(F) $\rightarrow$ 7(F) $\rightarrow$ 9
+* **C1:** 1 $\rightarrow$ 2(F) $\rightarrow$ 7(F) $\rightarrow$ 9 $\rightarrow$ 11 *(Lista vazia, pula tudo e dá Abaixo)*
+* **C2:** 1 $\rightarrow$ 2 $\rightarrow$ 3A(V) $\rightarrow$ 3B(V) $\rightarrow$ 4 $\rightarrow$ 2... $\rightarrow$ 7(V) $\rightarrow$ 8 $\rightarrow$ 11 *(Entra no positivo e par, soma, dá Acima)*
+* **C3:** 1 $\rightarrow$ 2 $\rightarrow$ 3A(V) $\rightarrow$ 3B(F) $\rightarrow$ 5(F) $\rightarrow$ 10 $\rightarrow$ 2... *(N>0 ímpar, o Python pula pro nó 5, falha e cai no continue)*
+* **C4:** 1 $\rightarrow$ 2 $\rightarrow$ 3A(F) $\rightarrow$ 5(V) $\rightarrow$ 6 $\rightarrow$ 2... *(Negativo, cai direto no -= 1)*
+* **C5:** 1 $\rightarrow$ 2 $\rightarrow$ 3A(F) $\rightarrow$ 5(F) $\rightarrow$ 10 $\rightarrow$ 2... *(N é Zero, falha nas duas e cai no continue)*
 
+### 3. Pares Def-Uso de `total` 
 
+Para rastrear o fluxo de dados da variável `total` , primeiro mapea-se onde ela é criada (Definição) e onde seu valor é lido (Uso) em relação às linhas do código  e aos nós do nosso GFC:
 
-3. Casos de Teste e Retornos Esperados 
+* **Definições de `total`:**
+* Linha 2 / Nó 1 (`total = 0`)
+* Linha 5 / Nó 4 (`total += n`)
+* Linha 7 / Nó 6 (`total -= 1`)
 
-1. **Laço ignorado (0 iterações):** `numeros = []` $\rightarrow$ Retorno: **"Abaixo"**
-2. **Laço com 1 iteração (Cobre CO/C1/CC V/V):** `numeros = [12]` $\rightarrow$ Retorno: **"Acima"**
-3. **Laço com várias iterações (Cobre elif/else):** `numeros = [4, -5, 3, 10]` $\rightarrow$ Retorno: **"Acima"**
-4. **Cobertura de Condição (`n>0=F, par=V`):** `numeros = [-4]` $\rightarrow$ Retorno: **"Abaixo"**
-
-4. Pares Def-Uso de `total` 
-
-A variável `total` é avaliada no retorno. Os seguintes caminhos def-uso devem ser garantidos:
-
-* Definição (L2: `total = 0`) $\rightarrow$ Uso (L11: `total > 10`)
-* Definição (L5: `total += n`) $\rightarrow$ Uso (L11: `total > 10`)
-* Definição (L8: `total -= 1`) $\rightarrow$ Uso (L11: `total > 10`)
-
+* **Usos de `total`:**
+* Linha 5 / Nó 4 (*c-use* no cálculo `total + n`)
+* Linha 7 / Nó 6 (*c-use* no cálculo `total - 1`)
+* Linha 10 / Nó 7 (*p-use* na condição `total > 10`)
 ---
 
 Exercício 7: Fluxo de Dados 
